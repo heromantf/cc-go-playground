@@ -1,10 +1,53 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
+
+// WebSocket upgrader configuration
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Allow all origins for demo purposes
+	},
+}
+
+// handleWebSocket handles WebSocket connections with an echo server
+func handleWebSocket(c *gin.Context) {
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Printf("Failed to upgrade connection: %v", err)
+		return
+	}
+	defer conn.Close()
+
+	log.Println("WebSocket client connected")
+
+	for {
+		messageType, message, err := conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("WebSocket error: %v", err)
+			}
+			break
+		}
+
+		log.Printf("Received message: %s", message)
+
+		// Echo the message back to the client
+		if err := conn.WriteMessage(messageType, message); err != nil {
+			log.Printf("Failed to write message: %v", err)
+			break
+		}
+	}
+
+	log.Println("WebSocket client disconnected")
+}
 
 func main() {
 	r := gin.Default()
@@ -22,6 +65,9 @@ func main() {
 			"message": "Welcome to the Gin Demo Server!",
 		})
 	})
+
+	// WebSocket endpoint - echoes messages back to the client
+	r.GET("/ws", handleWebSocket)
 
 	// API group with sample endpoints
 	api := r.Group("/api/v1")
