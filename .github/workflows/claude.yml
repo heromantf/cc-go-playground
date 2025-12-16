@@ -48,6 +48,8 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ steps.app-token.outputs.token }}
+          bot_id: "249931802"
+          bot_name: "claude-code-hm[bot]"
           claude_args: |
             --model claude-opus-4-5-20251101
             --allowedTools "Bash(go:*),WebSearch,WebFetch"
